@@ -527,6 +527,8 @@ def build_config(args):
 
 
 if __name__ == "__main__":
+    print(str(sys.argv))
+
     parser = argparse.ArgumentParser(description="Show games owned by multiple users.")
     parser.add_argument(
         "db", type=str, nargs="*", help="the GOG DB for a user; multiple can be listed"
