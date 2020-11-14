@@ -126,8 +126,7 @@ dmypy.json
 
 
 # VSCode debugging and settings are machine specific, let's not check them in.
-.vscode/launch.json
-.vscode/settings.json
+.vscode/
 
 # User's steam dev api key file
 .user_steam_api_dev_key
