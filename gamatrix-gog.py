@@ -420,47 +420,95 @@ def OLD_parse_cmdline(argv: List[str]) -> Any:
     return parser.parse_args(argv)
 
 
-# interface,port,server,userid,version,<db>",
+## Test for command line switches affecting the config.
+#
+# Currently, these are the values you can affect via the command line:
+#
+# mode: client | server # default is client, use -s
+# interface: (valid interface address) # default is 0.0.0.0, use -i
+# port: (valid port) # default is 8080, use -p
+# include_single_player: True | False # use -I
 @pytest.mark.parametrize(
-    "commandline",
+    "description,commandline,config_fields,expected_values",
     [
-        ([".\\gamatrix-gog.py", "-a", "-I", "-c", ".\\config.yaml"]),
-        (
+        # [
+        #     "No switches",  # Description, should this test pass fail.
+        #     [
+        #         "./gamatrix-gog.py",  # standard, just left here to simulate actual command line argv list...
+        #         "--config-file",  # use long switch names, more descriptive this way
+        #         "./config-sample.yaml",  # use the sample yaml as a test data source
+        #     ],
+        #     [
+        #         "mode",  # names of the top-level field in the config file, in this case mode
+        #         "interface",
+        #         "port",
+        #         "include_single_player",
+        #         "all_games",
+        #     ],
+        #     [
+        #         "server",  # values that are expected, this list is arranged to coincide with fields in the same order as the list above
+        #         "0.0.0.0",
+        #         8080,
+        #         False,
+        #         False,
+        #     ],
+        # ],
+        # [
+        #     "Assorted values all in one",
+        #     [
+        #         "./gamatrix-gog.py",  # just here to simulate actual command line argv list...
+        #         "--config-file",
+        #         "./config-sample.yaml",
+        #         "--server",
+        #         "--interface",
+        #         "1.2.3.4",
+        #         "--port",
+        #         "62500",
+        #         "--include-single-player",
+        #         "--all-games",
+        #     ],
+        #     ["mode", "interface", "port", "include_single_player", "all_games"],
+        #     [
+        #         "server",
+        #         "1.2.3.4",
+        #         62500,
+        #         True,
+        #         True,
+        #     ],
+        # ],
+        [
+            "Only set the mode to server",
             [
-                ".\\gamatrix-gog.py",
-                "-c",
-                ".\\config.yaml",
-                "-d",
-                "-i",
-                "1.2.3.4",
-                "-p",
-                "62500",
-                "-z",
-                "-u",
-                "46987599337757807",
-                "-u",
-                "50618165816694042",
+                "./gamatrix-gog.py",
+                "--config-file",
+                "./config-sample.yaml",
+                "--server",
             ],
-        ),
-        (
-            [
-                ".\\gamatrix-gog.py",
-                "-c",
-                ".\\config.yaml",
-                "-d",
-                "-i",
-                "1.2.3.4",
-                "-p",
-                "62500",
-                "-z",
-                "-u",
-                "46987599337757807",
-            ]
-        ),
+            ["mode"],
+            ["server"],
+        ],
     ],
 )
-def test_cmdline_handling(commandline):
-    pass
+def test_cmdline_handling(
+    description: str,
+    commandline: List[str],
+    config_fields: List[str],
+    expected_values: List[Any],
+):
+    """Parse the command line and build the config file, checking for problems."""
+    args = OLD_parse_cmdline(commandline)
+    config = OLD_build_config(args)
+    for i in range(len(config_fields)):
+        assert (
+            config[config_fields[i]] == expected_values[i]
+        ), f"Failure for pass: '{description}'"
+
+    args2 = parse_cmdline(commandline)
+    config2 = build_config(args2)
+    for i2 in range(len(config_fields)):
+        assert (
+            config2[config_fields[i2]] == expected_values[i2]
+        ), f"Failure for pass: '{description}'"
 
 
 if __name__ == "__main__":
@@ -556,3 +604,17 @@ if __name__ == "__main__":
         print("")
 
     print(gog.get_caption(len(common_games)))
+
+
+## NOTES:
+# Setting `--debug` on the command line doesn't affect config["debug"], should it?
+# Adding <db> files at the end of the command line causes errors in the old mechanism (it works in the new docopt but since it didn't work before I think we might want to scrap it?)
+# Command line arg `--include-zero-players` doesn't seem to get used anywhere, nor affect the config?
+#
+## Things that we might want to affect via the command line but currently do not:
+#
+# db_path: C:\Users\derek\Documents\Dev\github\derek-keeler\gamatrix-gog-dbs
+# cache: C:\Users\derek\Documents\Dev\github\derek-keeler\gamatrix-gog\my-cache-file
+# log_level: info
+# igdb_client_secret: wqeogozgq6pmq3cuxzbsm0he8eieng
+# igdb_client_id: l5mrkvb1af96pjnsdhr76z69ty9amp
