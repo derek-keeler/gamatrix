@@ -496,18 +496,11 @@ def test_cmdline_handling(
     expected_values: List[Any],
 ):
     """Parse the command line and build the config file, checking for problems."""
-    args = OLD_parse_cmdline(commandline)
-    config = OLD_build_config(args)
+    args = parse_cmdline(commandline)
+    config = build_config(args)
     for i in range(len(config_fields)):
         assert (
             config[config_fields[i]] == expected_values[i]
-        ), f"Failure for pass: '{description}'"
-
-    args2 = parse_cmdline(commandline)
-    config2 = build_config(args2)
-    for i2 in range(len(config_fields)):
-        assert (
-            config2[config_fields[i2]] == expected_values[i2]
         ), f"Failure for pass: '{description}'"
 
 
