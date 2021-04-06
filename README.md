@@ -77,13 +77,13 @@ The Game grid option shows all games owned by the selected users
 ## Usage
 
 ```pre
-gamatrix-gog
+gamatrix_gog
 Show and compare between games owned by multiple users.
 
 Usage:
-    gamatrix-gog.py --help
-    gamatrix-gog.py --version
-    gamatrix-gog.py [--config-file=CFG] [--debug] [--all-games] [--interface=IFC] [--installed-only] [--include-single-player] [--port=PORT] [--server] [--update-cache] [--userid=UID ...] [<db> ... ]
+    python -m gamatrix_gog --help
+    python -m gamatrix_gog --version
+    python -m gamatrix_gog [--config-file=CFG] [--debug] [--all-games] [--interface=IFC] [--installed-only] [--include-single-player] [--port=PORT] [--server] [--update-cache] [--userid=UID ...] [<db> ... ]
 
 Options:
   -h, --help                   Show this help message and exit.
@@ -142,7 +142,12 @@ py -3 -m venv venv
 ```bash
 python -m pip install -U pip
 python -m pip install -r requirements.txt
-./gamatrix-gog.py
+```
+
+**3. Run the program:**
+
+```bash
+python -m gamatrix_gog --help
 ```
 
 **Note:** Python 3.7+ is recommended. Dictionaries are assumed to be ordered, which is a 3.7+ feature.

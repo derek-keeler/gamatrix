@@ -38,13 +38,13 @@ from flask import Flask, render_template, request
 from ruamel.yaml import YAML
 from werkzeug.utils import secure_filename
 
-from helpers import constants
-from helpers.cache_helper import Cache
-from helpers.gogdb_helper import gogDB, is_sqlite3
-from helpers.igdb_helper import IGDBHelper
-from helpers.misc_helper import get_slug_from_title
-from helpers.network_helper import check_ip_is_authorized
-from version import VERSION
+from gamatrix_gog.helpers import constants
+from gamatrix_gog.helpers.cache_helper import Cache
+from gamatrix_gog.helpers.gogdb_helper import gogDB, is_sqlite3
+from gamatrix_gog.helpers.igdb_helper import IGDBHelper
+from gamatrix_gog.helpers.misc_helper import get_slug_from_title
+from gamatrix_gog.helpers.network_helper import check_ip_is_authorized
+from gamatrix_gog.version import VERSION
 
 app = Flask(__name__)
 

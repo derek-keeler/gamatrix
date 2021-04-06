@@ -13,7 +13,7 @@ from typing import Any, List
 
 import pytest
 
-gog = __import__("gamatrix-gog")
+from gamatrix_gog import __main__ as gog
 
 
 @pytest.mark.parametrize(
@@ -96,6 +96,7 @@ def test_new_cmdline_handling(
 ):
     """Parse the command line and build the config file, checking for problems."""
     args = gog.parse_cmdline(commandline[1:])
+
     config = gog.build_config(args)
     for i in range(len(config_fields)):
         assert (
