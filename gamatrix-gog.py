@@ -28,6 +28,7 @@ Positional Arguments:
 
 import logging
 import os
+import pathlib
 import sys
 from ipaddress import IPv4Address, IPv4Network
 from typing import Any, Dict, List
@@ -59,6 +60,26 @@ def root():
         platforms=constants.PLATFORMS,
         version=VERSION,
     )
+
+
+def isSQLite3(path: str) -> bool:
+    """Fast check to ensure a file is indeed an SQLite3 db file, based on the format."""
+    # Thanks! https://stackoverflow.com/a/15355790/895739
+
+    test_sql_file = pathlib.Path(path)
+
+    if not test_sql_file.exists():
+        return False
+    if not test_sql_file.is_file():
+        return False
+
+    with open(test_sql_file.absolute().as_uri(), "rb") as file_:
+        header = file_.read(100)
+
+        if len(header) != 100:
+            return False
+
+        return header[:16] == b"SQLite format 3\000"
 
 
 # https://flask.palletsprojects.com/en/1.1.x/patterns/fileuploads/
