@@ -507,3 +507,8 @@ if __name__ == "__main__":
             print(f' Installed: {", ".join(usernames_with_game_installed)}')
 
     print(gog.get_caption(len(common_games)))
+    print(
+        render_template(
+            "commandline.txt", games=common_games, users=user_ids_to_compare
+        )
+    )

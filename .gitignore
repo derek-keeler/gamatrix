@@ -133,9 +133,9 @@ dmypy.json
 .user_steam_api_dev_key
 
 # User's config file
-config.yaml
-config-local.yaml
+config*.yaml
 .cache.json
 
 # Static files for flask, these are tracked in gamatrix-gog-configs
 static/
+

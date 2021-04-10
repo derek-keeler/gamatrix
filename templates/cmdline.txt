@@ -1,0 +1,7 @@
+{% for game, value in games.items() -%}
+  {{ value.title }}
+    Platforms: {% for platform in value.platforms -%}{{ platform }}{%- endfor -%}
+    {% for uvalue in users.items() -%}Owned by: {% if userid in value.owners -%}{{ uvalue.username }}{%- endif -%}{%- endfor -%}
+    Max players: {{ value.max_players }}
+    Comment: {{ value.comment }}
+{%- endfor %}
