@@ -130,7 +130,7 @@ def upload_file():
 
 @app.route("/api/users", methods=["GET"])
 def get_users():
-    return """{
+    data = """{
         [
             {
                 "steam_username": "d3r3kk",
@@ -160,6 +160,8 @@ def get_users():
         ]
     }
     """
+
+    return render_template("new_hotness.html", message=data)
 
 
 @app.route("/compare", methods=["GET", "POST"])

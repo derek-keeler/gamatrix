@@ -18,6 +18,8 @@
     * [Restricting access](#restricting-access)
     * [Allowed CIDRs](#allowed-cidrs)
     * [iptables](#iptables)
+* [Development Notes](#development-notes)
+    * [Front End (React)](#react-front-end)
 * [Contributing](#contributing)
 
 ## Quick start
@@ -263,6 +265,29 @@ Save it so it persists after reboot:
 ```
 
 Now you can open the port on your router. For more information on using iptables with Docker, see [here](https://docs.docker.com/network/iptables/).
+
+## Development Notes
+
+Notes about running this project locally while developing new features, enhancing existing features, or fixing bugs.
+
+### React Front End
+
+_Note: This is experimental only and currently in development._
+
+We are currently investigating the merits of a Javascript front end using React elements. The new front end
+will be modular, hopefully making use of the MVVM pattern or some shade of it. To set it up on your local machine
+so that you can help to develop on it, here's the steps you might need to take.
+
+1. Install NodeJS on your local machine. We are likely to stick to LTS versions only, and at the time of writing we
+are using version 16.13.0. [Get node from their website here](https://nodejs.org/en/).
+1. Open a terminal window (or the terminal window of your code editor), navigate to this project folder, under the
+`static/` folder. Then issue the following commands:
+    1. `npm install`
+    1. `npm run build:dev`
+    1. `npm run watch`
+1. Remember you must reload the Flask app if you wish to develop endpoints along with the UX.
+1. The react elements will live in `static/scripts/...` and will be built to `static/dist/` in a single file `main.js`.
+1. All templatest that make use of the React elements simply need to supply a DOM object to connect them to, and include the `main.js` file to pull them in.
 
 ## Contributing
 
