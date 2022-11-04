@@ -1,0 +1,26 @@
+.body {
+    font-size: x-large;
+}
+
+body.table,
+body.th,
+body.td {
+    border-collapse: collapse;
+}
+
+/* Make links invisible so we can make the DB date tooltips cleanly */
+.body.a:link.com {
+    color: lightgray;
+}
+
+.body.a:active {
+    color: lightgray;
+}
+
+.body.a:visited {
+    color: lightgray;
+}
+
+.body.a:hover {
+    color: lightgray;
+}
