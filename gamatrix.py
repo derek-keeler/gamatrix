@@ -23,16 +23,16 @@ Options:
   -u USERID, --userid=USERID   The GOG user IDs to compare, there can be multiples of this switch.
 """
 
-import docopt
 import logging
 import os
 import random
 import sys
 import time
 
+import docopt
 from flask import Flask, render_template, request
 from ipaddress import IPv4Address, IPv4Network
-from ruamel.yaml import YAML
+import yaml
 from typing import Any, Dict, List
 from werkzeug.utils import secure_filename
 
@@ -258,9 +258,8 @@ def build_config(args: Dict[str, Any]) -> Dict[str, Any]:
     """
     config_file = args.get("--config-file", None)
     if config_file is not None:
-        yaml = YAML(typ="safe")
         with open(config_file, "r") as config_file:
-            config = yaml.load(config_file)
+            config = yaml.safe_load(config_file)
     else:
         # We didn't get a config file, so populate from args
         config = {}
