@@ -44,164 +44,174 @@ from helpers.misc_helper import get_slug_from_title
 from helpers.network_helper import check_ip_is_authorized
 from version import VERSION
 
-app = Flask(__name__)
 
+def start_webapp(config: Dict[str, Any]):
+    app = Flask(__name__)
+    app.config.from_mapping(mapping=config)
 
-@app.route("/")
-def root():
-    check_ip_is_authorized(request.remote_addr, config["allowed_cidrs"])
+    @app.route("/")
+    def root():
+        check_ip_is_authorized(request.remote_addr, config["allowed_cidrs"])
 
-    return render_template(
-        "index.html.jinja",
-        users=config["users"],
-        uploads_enabled=config["uploads_enabled"],
-        platforms=constants.PLATFORMS,
-        version=VERSION,
-    )
-
-
-# https://flask.palletsprojects.com/en/2.0.x/patterns/fileuploads/
-@app.route("/upload", methods=["GET", "POST"])
-def upload_file():
-    check_ip_is_authorized(request.remote_addr, config["allowed_cidrs"])
-
-    if request.method == "POST":
-        message = "Upload failed: "
-
-        # Check if the post request has the file part
-        if "file" not in request.files:
-            message += "no file part in post request"
-        else:
-            # Until we use a prod server, files that are too large will just hang :-(
-            # See the flask site above for deets
-            file = request.files["file"]
-
-            # If user does not select file, the browser submits an empty part without filename
-            if file.filename == "":
-                message += "no file selected"
-            elif not allowed_file(file.filename):
-                message += "unsupported file extension"
-            else:
-                # Name the file according to who uploaded it
-                user, target_filename = get_db_name_from_ip(request.remote_addr)
-                if target_filename is None:
-                    message += "failed to determine target filename from your IP; is it in the config file?"
-                elif not is_sqlite3(file.read(16)):
-                    message += "file is not an SQLite database"
-                else:
-                    log.info(f"Uploading {target_filename} from {request.remote_addr}")
-                    filename = secure_filename(target_filename)
-
-                    # Back up the previous file
-                    full_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-                    backup_filename = f"{filename}.bak"
-                    full_backup_path = os.path.join(
-                        app.config["UPLOAD_FOLDER"], backup_filename
-                    )
-
-                    if os.path.exists(full_path):
-                        os.replace(full_path, full_backup_path)
-
-                    # Put the cursor back to the start after the above file.read()
-                    file.seek(0)
-                    file.save(full_path)
-                    # Could call get_db_mtime() here but this is less expensive
-                    config["users"][user]["db_mtime"] = time.strftime(
-                        constants.TIME_FORMAT, time.localtime()
-                    )
-                    message = f"Great success! File uploaded as {filename}"
-
-        return render_template("upload_status.html.jinja", message=message)
-    else:
-        return """
-        <!doctype html>
-        <title>Upload DB</title>
-        <h1>Upload DB</h1>
-        GOG DBs are usually in C:\ProgramData\GOG.com\Galaxy\storage\galaxy-2.0.db
-        <br><br>
-        <form method=post enctype=multipart/form-data>
-        <input type=file name=file>
-        <input type=submit value=Upload>
-        </form>
-        """
-
-
-@app.route("/compare", methods=["GET", "POST"])
-def compare_libraries():
-    check_ip_is_authorized(request.remote_addr, config["allowed_cidrs"])
-
-    if request.args["option"] == "upload":
-        return upload_file()
-
-    opts = init_opts()
-
-    # Check boxes get passed in as "on" if checked, or not at all if unchecked
-    for k in request.args.keys():
-        # Only user IDs are ints
-        try:
-            i = int(k)
-            opts["user_ids_to_compare"][i] = config["users"][i]
-        except ValueError:
-            if k.startswith("exclude_platform_"):
-                opts["exclude_platforms"].append(k.split("_")[-1])
-            else:
-                opts[k] = True
-
-    # If no users were selected, just refresh the page
-    if not opts["user_ids_to_compare"]:
-        return root()
-
-    gog = gogDB(config, opts)
-
-    if request.args["option"] == "grid":
-        gog.config["all_games"] = True
-        template = "game_grid.html.jinja"
-    elif request.args["option"] == "list":
-        template = "game_list.html.jinja"
-    else:
-        return root()
-
-    common_games = gog.get_common_games()
-
-    if not igdb.access_token:
-        igdb.get_access_token()
-
-    for k in list(common_games.keys()):
-        log.debug(f'{k}: using igdb_key {common_games[k]["igdb_key"]}')
-        # Get the IGDB ID by release key if possible, otherwise try by title
-        igdb.get_igdb_id(common_games[k]["igdb_key"]) or igdb.get_igdb_id_by_slug(
-            common_games[k]["igdb_key"],
-            common_games[k]["slug"],
-            config["update_cache"],
+        return render_template(
+            "index.html.jinja",
+            users=config["users"],
+            uploads_enabled=config["uploads_enabled"],
+            platforms=constants.PLATFORMS,
+            version=VERSION,
         )
-        igdb.get_game_info(common_games[k]["igdb_key"])
-        igdb.get_multiplayer_info(common_games[k]["igdb_key"])
 
-    cache.save()
-    set_multiplayer_status(common_games, cache.data)
-    common_games = gog.merge_duplicate_titles(common_games)
+    # https://flask.palletsprojects.com/en/2.0.x/patterns/fileuploads/
+    @app.route("/upload", methods=["GET", "POST"])
+    def upload_file():
+        check_ip_is_authorized(request.remote_addr, config["allowed_cidrs"])
 
-    common_games = gog.filter_games(common_games, gog.config["all_games"])
-    num_games = len(common_games)
+        if request.method == "POST":
+            message = "Upload failed: "
 
-    log.debug(f'user_ids_to_compare = {opts["user_ids_to_compare"]}')
+            # Check if the post request has the file part
+            if "file" not in request.files:
+                message += "no file part in post request"
+            else:
+                # Until we use a prod server, files that are too large will just hang :-(
+                # See the flask site above for deets
+                file = request.files["file"]
 
-    if opts["randomize"]:
-        key = random.choice(list(common_games))
-        log.debug(f"Chose random release key {key}")
-        common_games = {key: common_games[key]}
+                # If user does not select file, the browser submits an empty part without filename
+                if file.filename == "":
+                    message += "no file selected"
+                elif not allowed_file(file.filename):
+                    message += "unsupported file extension"
+                else:
+                    # Name the file according to who uploaded it
+                    user, target_filename = get_db_name_from_ip(request.remote_addr)
+                    if target_filename is None:
+                        message += "failed to determine target filename from your IP; is it in the config file?"
+                    elif not is_sqlite3(file.read(16)):
+                        message += "file is not an SQLite database"
+                    else:
+                        log.info(
+                            f"Uploading {target_filename} from {request.remote_addr}"
+                        )
+                        filename = secure_filename(target_filename)
 
-    debug_str = ""
-    return render_template(
-        template,
-        debug_str=debug_str,
-        games=common_games,
-        users=opts["user_ids_to_compare"],
-        caption=gog.get_caption(num_games, opts["randomize"]),
-        show_keys=opts["show_keys"],
-        randomize=opts["randomize"],
-        platforms=constants.PLATFORMS,
-    )
+                        # Back up the previous file
+                        full_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+                        backup_filename = f"{filename}.bak"
+                        full_backup_path = os.path.join(
+                            app.config["UPLOAD_FOLDER"], backup_filename
+                        )
+
+                        if os.path.exists(full_path):
+                            os.replace(full_path, full_backup_path)
+
+                        # Put the cursor back to the start after the above file.read()
+                        file.seek(0)
+                        file.save(full_path)
+                        # Could call get_db_mtime() here but this is less expensive
+                        config["users"][user]["db_mtime"] = time.strftime(
+                            constants.TIME_FORMAT, time.localtime()
+                        )
+                        message = f"Great success! File uploaded as {filename}"
+
+            return render_template("upload_status.html.jinja", message=message)
+        return """
+            <!doctype html>
+            <title>Upload DB</title>
+            <h1>Upload DB</h1>
+            GOG DBs are usually in C:\ProgramData\GOG.com\Galaxy\storage\galaxy-2.0.db
+            <br><br>
+            <form method=post enctype=multipart/form-data>
+            <input type=file name=file>
+            <input type=submit value=Upload>
+            </form>
+            """  # type: ignore
+
+    @app.route("/compare", methods=["GET", "POST"])
+    def compare_libraries():
+        check_ip_is_authorized(request.remote_addr, config["allowed_cidrs"])
+
+        if request.args["option"] == "upload":
+            return upload_file()
+
+        opts = init_opts()
+
+        # Check boxes get passed in as "on" if checked, or not at all if unchecked
+        for k in request.args.keys():
+            # Only user IDs are ints
+            try:
+                i = int(k)
+                opts["user_ids_to_compare"][i] = config["users"][i]
+            except ValueError:
+                if k.startswith("exclude_platform_"):
+                    opts["exclude_platforms"].append(k.split("_")[-1])
+                else:
+                    opts[k] = True
+
+        # If no users were selected, just refresh the page
+        if not opts["user_ids_to_compare"]:
+            return root()
+
+        gog = gogDB(config, opts)
+
+        if request.args["option"] == "grid":
+            gog.config["all_games"] = True
+            template = "game_grid.html.jinja"
+        elif request.args["option"] == "list":
+            template = "game_list.html.jinja"
+        else:
+            return root()
+
+        common_games = gog.get_common_games()
+
+        if not igdb.access_token:
+            igdb.get_access_token()
+
+        for k in list(common_games.keys()):
+            log.debug(f'{k}: using igdb_key {common_games[k]["igdb_key"]}')
+            # Get the IGDB ID by release key if possible, otherwise try by title
+            if not igdb.get_igdb_id(common_games[k]["igdb_key"]):
+                igdb.get_igdb_id_by_slug(
+                    common_games[k]["igdb_key"],
+                    common_games[k]["slug"],
+                    config["update_cache"],
+                )
+            igdb.get_game_info(common_games[k]["igdb_key"])
+            igdb.get_multiplayer_info(common_games[k]["igdb_key"])
+
+        cache.save()
+        set_multiplayer_status(common_games, cache.data)
+        common_games = gog.merge_duplicate_titles(common_games)
+
+        common_games = gog.filter_games(common_games, gog.config["all_games"])
+        num_games = len(common_games)
+
+        log.debug(f'user_ids_to_compare = {opts["user_ids_to_compare"]}')
+
+        if opts["randomize"]:
+            key = random.choice(list(common_games))
+            log.debug(f"Chose random release key {key}")
+            common_games = {key: common_games[key]}
+
+        debug_str = ""
+        return render_template(
+            template,
+            debug_str=debug_str,
+            games=common_games,
+            users=opts["user_ids_to_compare"],
+            caption=gog.get_caption(num_games, opts["randomize"]),
+            show_keys=opts["show_keys"],
+            randomize=opts["randomize"],
+            platforms=constants.PLATFORMS,
+        )
+
+    # Start Flask to run in server mode until killed
+    if os.name != "nt":
+        time.tzset()  # type: ignore
+
+    app.config["UPLOAD_FOLDER"] = config["db_path"]
+    app.config["MAX_CONTENT_LENGTH"] = constants.UPLOAD_MAX_SIZE
+    app.run(host=config["interface"], port=config["port"])
 
 
 def get_db_name_from_ip(ip):
@@ -428,7 +438,11 @@ def set_multiplayer_status(game_list, cache):
 
 def parse_cmdline(argv: List[str]) -> Dict[str, Any]:
     return docopt.docopt(
-        __doc__, argv=argv, help=True, version=VERSION, options_first=True
+        __doc__ if __doc__ else "",
+        argv=argv,
+        help=True,
+        version=VERSION,
+        options_first=True,
     )
 
 
@@ -458,13 +472,7 @@ if __name__ == "__main__":
     )
 
     if "mode" in config and config["mode"] == "server":
-        # Start Flask to run in server mode until killed
-        if os.name != "nt":
-            time.tzset()  # type: ignore
-
-        app.config["UPLOAD_FOLDER"] = config["db_path"]
-        app.config["MAX_CONTENT_LENGTH"] = constants.UPLOAD_MAX_SIZE
-        app.run(host=config["interface"], port=config["port"])
+        start_webapp(config)
         sys.exit(0)
 
     user_ids_to_compare = opts.get("--userid", [])
@@ -489,13 +497,12 @@ if __name__ == "__main__":
     for k in list(common_games.keys()):
         log.debug(f'{k}: using igdb_key {common_games[k]["igdb_key"]}')
         # Get the IGDB ID by release key if possible, otherwise try by title
-        igdb.get_igdb_id(
-            common_games[k]["igdb_key"], config["update_cache"]
-        ) or igdb.get_igdb_id_by_slug(
-            common_games[k]["igdb_key"],
-            common_games[k]["slug"],
-            config["update_cache"],
-        )
+        if not igdb.get_igdb_id(common_games[k]["igdb_key"], config["update_cache"]):
+            igdb.get_igdb_id_by_slug(
+                common_games[k]["igdb_key"],
+                common_games[k]["slug"],
+                config["update_cache"],
+            )
         igdb.get_game_info(common_games[k]["igdb_key"], config["update_cache"])
         igdb.get_multiplayer_info(common_games[k]["igdb_key"], config["update_cache"])
 
