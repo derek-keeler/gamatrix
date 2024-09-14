@@ -26,7 +26,6 @@ Options:
 import docopt
 import logging
 import os
-import pkg_resources
 import random
 import sys
 import time
@@ -43,6 +42,7 @@ from gamatrix.helpers.gogdb_helper import gogDB, is_sqlite3
 from gamatrix.helpers.igdb_helper import IGDBHelper
 from gamatrix.helpers.misc_helper import get_slug_from_title
 from gamatrix.helpers.network_helper import check_ip_is_authorized
+from gamatrix import __getattr__ as gamatrix_attr
 
 app = Flask(__name__)
 
@@ -445,7 +445,7 @@ if __name__ == "__main__":
     )
     log = logging.getLogger()
 
-    version = pkg_resources.get_distribution("gamatrix").version
+    version = gamatrix_attr("version")
 
     opts = parse_cmdline(
         argv=sys.argv[1:],

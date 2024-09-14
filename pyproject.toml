@@ -1,7 +1,8 @@
 [project]
 name = "gamatrix"
 # Changing this requires rebuilding even if in editable mode
-version = "1.4.6"
+version = "1.4.7"
+requires-python = ">=3.11"
 authors = [
     {name = "Erik Niklas", email = "github@bobanddoug.com"},
     {name = "Derek Keeler", email = "34773432+derek-keeler@users.noreply.github.com"},
@@ -12,7 +13,6 @@ description = """A tool to compare the games owned by several users, and list
                  use [GOG Galaxy](https://www.gog.com/galaxy); since GOG Galaxy
                  supports almost all major digital distribution platforms."""
 readme = "README.md"
-requires-python = ">=3.7"
 license = { file = "LICENSE" }
 
 classifiers = [
