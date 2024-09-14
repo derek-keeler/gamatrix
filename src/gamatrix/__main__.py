@@ -56,7 +56,7 @@ def root():
         users=config["users"],
         uploads_enabled=config["uploads_enabled"],
         platforms=constants.PLATFORMS,
-        version=version,
+        version=gamatrix_attr("version"),
     )
 
 
