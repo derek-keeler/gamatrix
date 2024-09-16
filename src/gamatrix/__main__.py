@@ -23,13 +23,14 @@ Options:
   -u USERID, --userid=USERID   The GOG user IDs to compare, there can be multiples of this switch.
 """
 
-import docopt
 import logging
 import os
 import random
 import sys
 import time
+from pathlib import Path
 
+import click
 from flask import Flask, render_template, request
 from ipaddress import IPv4Address, IPv4Network
 import yaml
@@ -43,6 +44,18 @@ from gamatrix.helpers.igdb_helper import IGDBHelper
 from gamatrix.helpers.misc_helper import get_slug_from_title
 from gamatrix.helpers.network_helper import check_ip_is_authorized
 from gamatrix import __getattr__ as gamatrix_attr
+
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+log = logging.getLogger()
+
+# GLOBALS
+config: Dict[str, Any] = {}
+igdb: Any = {}  # is actually an IGDBHelper object, but we don't initialize it here
+cache: Any = {}  # is actually a Cache object, but we don't initialize it here
 
 app = Flask(__name__)
 
@@ -128,6 +141,9 @@ def upload_file():
 
 @app.route("/compare", methods=["GET", "POST"])
 def compare_libraries():
+    global config
+    global igdb
+
     check_ip_is_authorized(request.remote_addr, config["allowed_cidrs"])
 
     if request.args["option"] == "upload":
@@ -426,40 +442,120 @@ def set_multiplayer_status(game_list, cache):
         game_list[k]["max_players"] = max_players
 
 
-def parse_cmdline(argv: List[str], docstr: str, version: str) -> Dict[str, Any]:
-    """Get the docopt stuff out of the way because ugly."""
-    return docopt.docopt(
-        docstr,
-        argv=argv,
-        help=True,
-        version=version,
-        options_first=True,
-    )
+def __set_config_value(ctx, param: click.Option, value: str):
+    """Update the ."""
+
+    global config
+
+    if param.name not in config:
+        log.debug(f"Setting new config parameter '{param.name}' to '{value}'")
+    config[str(param.name)] = value
+    return value
 
 
-if __name__ == "__main__":
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-        level=logging.INFO,
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    log = logging.getLogger()
+def __set_config_default(ctx, _, conf_path_str: str):
+    """Set the global config variable to the contents of the config file."""
 
-    version = gamatrix_attr("version")
+    global config
 
-    opts = parse_cmdline(
-        argv=sys.argv[1:],
-        docstr=__doc__ if __doc__ is not None else "",
-        version=version,
-    )
+    conf_path: Path = Path(conf_path_str)
+    if conf_path.exists():
+        with open(conf_path, "r") as conf_stream:
 
-    if opts.get("--debug", False):
+            config = yaml.load(conf_stream.read(), Loader=yaml.Loader)
+            ctx.default_map = config
+
+    return conf_path
+
+
+@click.command(context_settings={"auto_envvar_prefix": "GAMATRIX"})
+@click.option(
+    "--config-file",
+    "-c",
+    help="The config file to use.",
+    type=click.Path(),
+    callback=__set_config_default,
+    is_eager=True,  # process this option first-ish
+)
+@click.option("--debug", "-d", is_flag=True, help="Print out verbose debug output.")
+@click.option(
+    "--all-games",
+    "-a",
+    is_flag=True,
+    callback=__set_config_value,
+    help="List all games owned by the selected users (doesn't include single player unless -S is used).",
+)
+@click.option(
+    "--interface",
+    "-i",
+    callback=__set_config_value,
+    help="The network interface to use if running in server mode; default is 0.0.0.0.",
+)
+@click.option(
+    "--installed-only",
+    "-I",
+    is_flag=True,
+    callback=__set_config_value,
+    help="Only show games installed by all users.",
+)
+@click.option(
+    "--port",
+    "-p",
+    callback=__set_config_value,
+    help="The network port to use if running in server mode; default is 8080.",
+)
+@click.option(
+    "--include-single-player",
+    "-S",
+    is_flag=True,
+    callback=__set_config_value,
+    help="Include single player games.",
+)
+@click.option(
+    "--update-cache",
+    "-U",
+    is_flag=True,
+    callback=__set_config_value,
+    help="Update cache entries that have incomplete info.",
+)
+@click.option(
+    "--userids",
+    "-u",
+    multiple=True,
+    help="The GOG user IDs to compare, there can be multiples of this switch.",
+)
+@click.option(
+    "--mode",
+    "-m",
+    callback=__set_config_value,
+    help="Mode to run in, is either 'cli' or 'server'.",
+)
+@click.argument("databases", nargs=-1, type=click.Path(exists=True))
+@click.version_option(version=gamatrix_attr("version"))
+def main(
+    config_file: str,
+    debug: bool,
+    all_games: bool,
+    interface: str,
+    installed_only: bool,
+    port: str,
+    include_single_player: bool,
+    update_cache: bool,
+    userids: List[str],
+    mode: str,
+    databases: List[str],
+):
+    # Ensure we are all using the same globally used variables
+    global config
+    global igdb
+    global cache
+
+    if debug:
         log.setLevel(logging.DEBUG)
 
-    log.debug(f"Command line arguments: {sys.argv}")
-    log.debug(f"Arguments after parsing: {opts}")
+    log.debug(f"Command line arguments: {locals()}")
 
-    config = build_config(opts)
+    # config = build_config(config_file=config_file, users=userids)
     log.debug(f"config = {config}")
 
     cache = Cache(config["cache"])
@@ -478,16 +574,15 @@ if __name__ == "__main__":
         app.run(host=config["interface"], port=config["port"])
         sys.exit(0)
 
-    user_ids_to_compare = opts.get("--userid", [])
-    if user_ids_to_compare:
-        user_ids_to_compare = [int(u) for u in user_ids_to_compare]
+    if userids:
+        user_ids_to_compare = [int(u) for u in userids]
     else:
         user_ids_to_compare = [u for u in config["users"].keys()]
 
     # init_opts() is meant for server mode; any CLI options that are also
     # web UI options need to be overridden
     web_opts = init_opts()
-    web_opts["include_single_player"] = opts.get("--include-single-player", False)
+    web_opts["include_single_player"] = include_single_player
 
     for userid in user_ids_to_compare:
         web_opts["user_ids_to_compare"][userid] = config["users"][userid]
@@ -539,3 +634,7 @@ if __name__ == "__main__":
             print(f' Installed: {", ".join(usernames_with_game_installed)}')
 
     print(gog.get_caption(len(common_games)))
+
+
+if __name__ == "__main__":
+    main()

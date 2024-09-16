@@ -31,11 +31,20 @@ def __get_package_version() -> str:
         # Fall back on getting it from a local pyproject.toml.
         # This works in a development environment where the
         # package has not been installed from a distribution.
+        __package_version = "FILE_BASED_UNKNOWN"  # so we don't fallback > 1 time
+
         import tomllib
 
-        pyproject_toml_file = Path(__file__).parent.parent / "pyproject.toml" # parent of /src/gamatrix/__init__.py
+        pyproject_toml_file = (
+            Path(__file__).parent.parent / "pyproject.toml"
+        )  # parent of /src/gamatrix/__init__.py
         if pyproject_toml_file.exists() and pyproject_toml_file.is_file():
-            __package_version = tomllib.load(pyproject_toml_file)["project"]["version"]
+
+            with open(pyproject_toml_file, "rb") as toml_file_contents:
+                toml_data = tomllib.load(toml_file_contents)
+            if "project" in toml_data and "version" in toml_data["project"]:
+                __package_version = toml_data["project"]["version"]
+
             # Indicate it might be locally modified or unreleased.
             __package_version = __package_version + "-localdev"
 
