@@ -39,7 +39,8 @@ from werkzeug.utils import secure_filename
 
 import gamatrix.helpers.constants as constants
 from gamatrix.helpers.cache_helper import Cache
-from gamatrix.helpers.gogdb_helper import gogDB, is_sqlite3
+from gamatrix.helpers.database import Database, is_sqlite3
+from gamatrix.helpers.gogdb_helper import gogDB
 from gamatrix.helpers.igdb_helper import IGDBHelper
 from gamatrix.helpers.misc_helper import get_slug_from_title
 from gamatrix.helpers.network_helper import check_ip_is_authorized
