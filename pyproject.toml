@@ -7,12 +7,9 @@ authors = [
     {name = "Derek Keeler", email = "34773432+derek-keeler@users.noreply.github.com"},
     {name = "Klosteinmann", email = "34807323+klosteinmann@users.noreply.github.com"},
 ]
-description = """A tool to compare the games owned by several users, and list
-                 all the games they have in common. It requires all users to
-                 use [GOG Galaxy](https://www.gog.com/galaxy); since GOG Galaxy
-                 supports almost all major digital distribution platforms."""
+description = "A tool to compare the games owned by several users, and list all the games they have in common. It requires all users to use [GOG Galaxy](https://www.gog.com/galaxy) since GOG Galaxy supports almost all major digital distribution platforms."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.13"
 license = { file = "LICENSE" }
 
 classifiers = [
@@ -21,11 +18,7 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "docopt==0.6.2",
