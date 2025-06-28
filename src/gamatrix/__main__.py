@@ -26,7 +26,7 @@ Options:
 import docopt
 import logging
 import os
-import pkg_resources
+from importlib import metadata
 import random
 import sys
 import time
@@ -445,7 +445,7 @@ if __name__ == "__main__":
     )
     log = logging.getLogger()
 
-    version = pkg_resources.get_distribution("gamatrix").version
+    version = metadata.version("gamatrix")
 
     opts = parse_cmdline(
         argv=sys.argv[1:],
