@@ -39,11 +39,25 @@ class IngestionHelper:
             
         Returns:
             Tuple of (UserData, dict of GameData keyed by release_key)
+            
+        Raises:
+            FileNotFoundError: If database file doesn't exist
+            ValueError: If database is invalid or corrupted
+            Exception: For other extraction errors
         """
         self.log.info(f"Extracting data for user {user_id} from {db_path}")
         
         if not os.path.exists(db_path):
             raise FileNotFoundError(f"Database file not found: {db_path}")
+        
+        # Validate that it's actually a SQLite database
+        try:
+            with open(db_path, 'rb') as f:
+                header = f.read(16)
+                if not header.startswith(b"SQLite format 3"):
+                    raise ValueError(f"File is not a valid SQLite database: {db_path}")
+        except Exception as e:
+            raise ValueError(f"Cannot read database file {db_path}: {e}")
         
         # Create a minimal config for this user only
         user_config = {
@@ -66,15 +80,22 @@ class IngestionHelper:
             'exclude_platforms': [],
         }
         
-        gog = gogDB(user_config, opts)
-        
-        # Get all games for this user
-        all_games = gog.get_common_games()
-        
-        # Get installed games
-        gog.use_db(db_path)
-        installed_games = set(gog.get_installed_games())
-        gog.close_connection()
+        try:
+            gog = gogDB(user_config, opts)
+            
+            # Get all games for this user
+            all_games = gog.get_common_games()
+            
+            if not all_games:
+                self.log.warning(f"No games found for user {user_id}")
+            
+            # Get installed games
+            gog.use_db(db_path)
+            installed_games = set(gog.get_installed_games())
+            gog.close_connection()
+            
+        except Exception as e:
+            raise Exception(f"Error extracting games for user {user_id}: {e}")
         
         # Convert to our data structure
         games_data = {}
@@ -82,43 +103,60 @@ class IngestionHelper:
         installed_count = 0
         
         for release_key, game_info in all_games.items():
-            # Determine if game is installed
-            is_installed = release_key in installed_games
-            if is_installed:
-                installed_count += 1
-            
-            # Create GameData object
-            game_data = GameData(
-                release_key=release_key,
-                title=game_info['title'],
-                slug=game_info['slug'],
-                platforms=game_info['platforms'],
-                owners=[user_id],
-                installed=[user_id] if is_installed else [],
-                igdb_key=game_info.get('igdb_key', release_key),
-                multiplayer=game_info.get('multiplayer', False),
-                max_players=game_info.get('max_players'),
-                comment=game_info.get('comment'),
-                url=game_info.get('url')
-            )
-            
-            games_data[release_key] = game_data
+            try:
+                # Validate required fields
+                if 'title' not in game_info or not game_info['title']:
+                    self.log.warning(f"Game {release_key} has no title, skipping")
+                    continue
+                
+                if 'platforms' not in game_info or not game_info['platforms']:
+                    self.log.warning(f"Game {release_key} has no platforms, using 'unknown'")
+                    game_info['platforms'] = ['unknown']
+                
+                # Determine if game is installed
+                is_installed = release_key in installed_games
+                if is_installed:
+                    installed_count += 1
+                
+                # Create GameData object
+                game_data = GameData(
+                    release_key=release_key,
+                    title=game_info['title'],
+                    slug=game_info.get('slug', release_key.lower().replace(' ', '-')),
+                    platforms=game_info['platforms'],
+                    owners=[user_id],
+                    installed=[user_id] if is_installed else [],
+                    igdb_key=game_info.get('igdb_key', release_key),
+                    multiplayer=game_info.get('multiplayer', False),
+                    max_players=game_info.get('max_players'),
+                    comment=game_info.get('comment'),
+                    url=game_info.get('url')
+                )
+                
+                games_data[release_key] = game_data
+                
+            except Exception as e:
+                self.log.error(f"Error processing game {release_key} for user {user_id}: {e}")
+                continue
         
         # Create UserData object
-        user_data = UserData(
-            user_id=user_id,
-            username=self.config['users'][user_id]['username'],
-            db_filename=self.config['users'][user_id]['db'],
-            db_mtime=time.strftime(
-                constants.TIME_FORMAT, 
-                time.localtime(os.path.getmtime(db_path))
-            ),
-            total_games=total_games,
-            installed_games=installed_count
-        )
+        try:
+            user_data = UserData(
+                user_id=user_id,
+                username=self.config['users'][user_id].get('username', f'User_{user_id}'),
+                db_filename=self.config['users'][user_id].get('db', 'unknown.db'),
+                db_mtime=time.strftime(
+                    constants.TIME_FORMAT, 
+                    time.localtime(os.path.getmtime(db_path))
+                ),
+                total_games=len(games_data),  # Use actual processed games count
+                installed_games=installed_count
+            )
+        except Exception as e:
+            raise Exception(f"Error creating user data for user {user_id}: {e}")
         
         self.log.info(
-            f"Extracted {total_games} games for user {user_id} "
+            f"Successfully extracted {len(games_data)} games for user {user_id} "
             f"({installed_count} installed)"
         )
         
