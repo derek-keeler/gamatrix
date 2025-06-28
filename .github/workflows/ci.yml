@@ -21,10 +21,10 @@ jobs:
       PYTHONDEVMODE: 1
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python_version }}
 
@@ -49,7 +49,7 @@ jobs:
       run: |
         python -m build --wheel
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: wheel
         path: dist/gamatrix-*-none-any.whl
