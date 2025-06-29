@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: gamatrix-flutter
+metadata:
+  template: gamatrix-flutter@0.0.1-beta
+  description: Deploy Flutter Gamatrix app to Azure Static Web Apps
+
+services:
+  web:
+    project: ./flutter_gamatrix
+    language: other
+    host: staticwebapp
+    dist: build/web
+
+hooks:
+  prebuild:
+    windows:
+      - pwsh: |
+          Write-Host "Installing Flutter dependencies..."
+          cd flutter_gamatrix
+          flutter pub get
+    posix:
+      - shell: sh
+        run: |
+          echo "Installing Flutter dependencies..."
+          cd flutter_gamatrix
+          flutter pub get
+  
+  build:
+    windows:
+      - pwsh: |
+          Write-Host "Building Flutter web app..."
+          cd flutter_gamatrix
+          flutter build web --release --web-renderer html
+    posix:
+      - shell: sh
+        run: |
+          echo "Building Flutter web app..."
+          cd flutter_gamatrix
+          flutter build web --release --web-renderer html

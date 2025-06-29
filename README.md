@@ -179,6 +179,32 @@ A Flutter-based mobile application is available in the `flutter_gamatrix/` direc
 
 See the [Flutter app README](flutter_gamatrix/README.md) for detailed documentation.
 
+### Deploying Flutter App to Azure
+
+The Flutter app can be deployed to Azure Static Web Apps for web hosting. This provides a cost-effective way to host the application with IP address restrictions for security.
+
+**Quick deployment:**
+```bash
+# Using the deployment script
+./deploy-flutter.sh
+
+# Or using just recipes
+just deploy-flutter dev  # Deploy to dev environment
+just deploy-flutter prod # Deploy to prod environment
+```
+
+**Prerequisites:**
+- Flutter SDK installed
+- Azure Developer CLI (azd) installed and logged in
+- Azure subscription with appropriate permissions
+
+The deployment automatically:
+- Builds the Flutter web app
+- Provisions Azure Static Web App with IP restrictions
+- Deploys the application to Azure
+
+See [AZURE_DEPLOYMENT.md](AZURE_DEPLOYMENT.md) for detailed deployment instructions, configuration options, and troubleshooting.
+
 ## Configuration
 
 A YAML file provides the runtime configuration; by default, this is `config.yaml` in the same directory as the script, but this can be overridden with the `-c` option. See the annotated [sample file](config-sample.yaml) or the [Windows flavour of this file](config-sample-windows.yaml) for an explanation of the format.

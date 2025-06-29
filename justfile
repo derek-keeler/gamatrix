@@ -70,6 +70,26 @@ git-tag:
     git push --tags
   fi
 
+# Deploy Flutter app to Azure Static Web Apps
+deploy-flutter env="dev":
+  #!/usr/bin/env bash
+  set -eu -o pipefail
+  export AZURE_ENV_NAME="gamatrix-flutter-{{env}}"
+  ./deploy-flutter.sh
+
+# Build Flutter app only (no deployment)
+build-flutter:
+  #!/usr/bin/env bash
+  set -eu -o pipefail
+  ./deploy-flutter.sh --build-only
+
+# Deploy Flutter app only (skip build)
+deploy-flutter-only env="dev":
+  #!/usr/bin/env bash
+  set -eu -o pipefail
+  export AZURE_ENV_NAME="gamatrix-flutter-{{env}}"
+  ./deploy-flutter.sh --deploy-only
+
 # Run the container in dev mode
 dev:
   #!/usr/bin/env bash
