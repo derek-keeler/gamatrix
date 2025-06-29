@@ -4,7 +4,7 @@
 
 ## Quick start
 
-Jump to [command-line mode](#command-line-mode) or [building with Docker](#running-in-docker).
+Jump to [command-line mode](#command-line-mode), [Flutter app](#flutter-alternative-ux), or [building with Docker](#running-in-docker).
 
 ## Introduction
 
@@ -19,6 +19,7 @@ Gamatrix is a tool to compare the games owned by several users, and list all the
 * optional Docker container
 * IP whitelisting support
 * ability to upload DBs
+* **NEW**: Flutter-based mobile app for the same functionality
 
 ### Screen shots
 
@@ -141,6 +142,42 @@ python -m gamatrix [args]
 If you use the `-s` option or set `mode: server` in the [config file](#configuration), a Flask web server is started and runs until the script is killed. This serves a web page with a check box for all users defined in the config file; users can select who they want to compare and a table is generated for the matching games. There is also a game grid layout that shows all games with color-coded cells indicating who owns which games.
 
 Server mode is the intended use case, and supports all options, unlike CLI mode, which may not.
+
+## Flutter Alternative UX
+
+A Flutter-based mobile application is available in the `flutter_gamatrix/` directory that provides the same functionality as the web interface. The Flutter app reads from the data store JSON files created by the Python application.
+
+### Flutter App Features
+
+- **Cross-platform**: Runs on Android, iOS, Web, Windows, macOS, and Linux
+- **Data Store Integration**: Reads Gamatrix data store JSON files directly
+- **Game List & Grid Views**: Same viewing options as the web interface
+- **Advanced Filtering**: All the same filtering options as the Python version
+- **Search Functionality**: Search games by title or platform
+- **Dark Theme**: Matches the original Gamatrix web UI appearance
+
+### Quick Start with Flutter App
+
+1. **Install Flutter SDK**: Follow the [Flutter installation guide](https://docs.flutter.dev/get-started/install)
+
+2. **Navigate to Flutter app**:
+   ```bash
+   cd flutter_gamatrix
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   flutter pub get
+   ```
+
+4. **Run the app**:
+   ```bash
+   flutter run
+   ```
+
+5. **Load a data store file**: Use the folder icon in the app to select a Gamatrix data store JSON file, or use the sample data that's created automatically.
+
+See the [Flutter app README](flutter_gamatrix/README.md) for detailed documentation.
 
 ## Configuration
 

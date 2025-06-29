@@ -9,7 +9,7 @@ authors = [
 ]
 description = "A tool to compare the games owned by several users, and list all the games they have in common. It requires all users to use [GOG Galaxy](https://www.gog.com/galaxy) since GOG Galaxy supports almost all major digital distribution platforms."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 license = { file = "LICENSE" }
 
 classifiers = [

@@ -1,0 +1,162 @@
+{
+  "version": "1.0",
+  "last_updated": "2024-01-01T12:00:00Z",
+  "users": {
+    "12345": {
+      "user_id": 12345,
+      "username": "Alice",
+      "db_filename": "alice-galaxy-2.0.db",
+      "db_mtime": "2024-01-01 12:00:00",
+      "total_games": 150,
+      "installed_games": 25
+    },
+    "67890": {
+      "user_id": 67890,
+      "username": "Bob",
+      "db_filename": "bob-galaxy-2.0.db",
+      "db_mtime": "2024-01-01 13:00:00",
+      "total_games": 200,
+      "installed_games": 30
+    },
+    "11111": {
+      "user_id": 11111,
+      "username": "Charlie",
+      "db_filename": "charlie-galaxy-2.0.db",
+      "db_mtime": "2024-01-01 14:00:00",
+      "total_games": 75,
+      "installed_games": 15
+    }
+  },
+  "games": {
+    "witcher3_steam": {
+      "release_key": "witcher3_steam",
+      "title": "The Witcher 3: Wild Hunt",
+      "slug": "witcher-3-wild-hunt",
+      "platforms": ["steam"],
+      "owners": [12345, 67890],
+      "installed": [12345],
+      "igdb_key": "witcher3",
+      "multiplayer": false,
+      "max_players": 1,
+      "comment": "Excellent RPG",
+      "url": "https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/"
+    },
+    "portal2_steam": {
+      "release_key": "portal2_steam",
+      "title": "Portal 2",
+      "slug": "portal-2",
+      "platforms": ["steam"],
+      "owners": [12345, 67890, 11111],
+      "installed": [12345, 67890],
+      "igdb_key": "portal2",
+      "multiplayer": true,
+      "max_players": 2,
+      "comment": "Great co-op puzzle game",
+      "url": null
+    },
+    "minecraft_gog": {
+      "release_key": "minecraft_gog",
+      "title": "Minecraft",
+      "slug": "minecraft",
+      "platforms": ["gog"],
+      "owners": [67890, 11111],
+      "installed": [67890, 11111],
+      "igdb_key": "minecraft",
+      "multiplayer": true,
+      "max_players": null,
+      "comment": null,
+      "url": null
+    },
+    "cyberpunk2077_steam": {
+      "release_key": "cyberpunk2077_steam",
+      "title": "Cyberpunk 2077",
+      "slug": "cyberpunk-2077",
+      "platforms": ["steam"],
+      "owners": [12345],
+      "installed": [],
+      "igdb_key": "cyberpunk2077",
+      "multiplayer": false,
+      "max_players": 1,
+      "comment": "Ambitious but buggy",
+      "url": null
+    },
+    "overwatch2_battlenet": {
+      "release_key": "overwatch2_battlenet",
+      "title": "Overwatch 2",
+      "slug": "overwatch-2",
+      "platforms": ["battlenet"],
+      "owners": [12345, 67890, 11111],
+      "installed": [12345, 11111],
+      "igdb_key": "overwatch2",
+      "multiplayer": true,
+      "max_players": 12,
+      "comment": null,
+      "url": null
+    },
+    "elden_ring_steam": {
+      "release_key": "elden_ring_steam",
+      "title": "Elden Ring",
+      "slug": "elden-ring",
+      "platforms": ["steam"],
+      "owners": [12345, 67890],
+      "installed": [12345, 67890],
+      "igdb_key": "eldenring",
+      "multiplayer": true,
+      "max_players": 4,
+      "comment": "Challenging but rewarding",
+      "url": null
+    },
+    "stardew_valley_steam": {
+      "release_key": "stardew_valley_steam",
+      "title": "Stardew Valley",
+      "slug": "stardew-valley",
+      "platforms": ["steam"],
+      "owners": [67890, 11111],
+      "installed": [67890, 11111],
+      "igdb_key": "stardewvalley",
+      "multiplayer": true,
+      "max_players": 4,
+      "comment": "Relaxing farming sim",
+      "url": null
+    },
+    "doom_eternal_steam": {
+      "release_key": "doom_eternal_steam",
+      "title": "DOOM Eternal",
+      "slug": "doom-eternal",
+      "platforms": ["steam"],
+      "owners": [12345],
+      "installed": [12345],
+      "igdb_key": "doometernal",
+      "multiplayer": false,
+      "max_players": 1,
+      "comment": "Fast-paced shooter",
+      "url": null
+    },
+    "among_us_steam": {
+      "release_key": "among_us_steam",
+      "title": "Among Us",
+      "slug": "among-us",
+      "platforms": ["steam"],
+      "owners": [12345, 67890, 11111],
+      "installed": [12345, 67890, 11111],
+      "igdb_key": "amongus",
+      "multiplayer": true,
+      "max_players": 10,
+      "comment": "Social deduction game",
+      "url": null
+    },
+    "hades_epic": {
+      "release_key": "hades_epic",
+      "title": "Hades",
+      "slug": "hades",
+      "platforms": ["epic"],
+      "owners": [11111],
+      "installed": [11111],
+      "igdb_key": "hades",
+      "multiplayer": false,
+      "max_players": 1,
+      "comment": "Excellent roguelike",
+      "url": null
+    }
+  }
+}
