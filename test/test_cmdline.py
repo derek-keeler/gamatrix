@@ -94,9 +94,63 @@ def test_new_cmdline_handling(
     config_fields: List[str],
     expected_values: List[Any],
 ):
+    pass
+
+
+@pytest.mark.parametrize(
+    "description,commandline,config_fields,expected_values",
+    [
+        [
+            "No switches",  # Description, should this test pass fail.
+            [
+                config_file: str,
+                debug: bool,
+                all_games: bool,
+                interface: str,
+                installed_only: bool,
+                port: str,
+                include_single_player: bool,
+                update_cache: bool,
+                userids: List[str],
+                mode: str,
+                databases: List[str],
+            ],
+            [
+                "mode",  # names of the top-level field in the config file, in this case mode
+                "interface",
+                "port",
+                "include_single_player",
+                "all_games",
+            ],
+            [
+                "server",  # values that are expected, this list is arranged to coincide with fields in the same order as the list above
+                "0.0.0.0",
+                8080,
+                False,
+                False,
+            ],
+        ],
+    ]
+)
+def test_command_line_params(
+    description: str,
+    commandline: List[str],
+    config_fields: List[str],
+    expected_values: List[Any],
+):
     """Parse the command line and build the config file, checking for problems."""
-    args = gog.parse_cmdline(
-        argv=commandline[1:], docstr=str(gog.__doc__), version="1.4.5"
+    args = gog.main(
+        config_file: str,
+        debug: bool,
+        all_games: bool,
+        interface: str,
+        installed_only: bool,
+        port: str,
+        include_single_player: bool,
+        update_cache: bool,
+        userids: List[str],
+        mode: str,
+        databases: List[str],
     )
     config = gog.build_config(args)
     for i in range(len(config_fields)):

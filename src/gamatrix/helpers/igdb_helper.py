@@ -12,10 +12,16 @@ from gamatrix.helpers.constants import (
 
 class IGDBHelper:
     def __init__(self, client_id, client_secret, cache):
+        self.log = logging.getLogger(__name__)
         self.cache = cache
         self.client_id = client_id
+        if client_id is None or client_id == "null" or client_id == "":
+            self.log.warning("No client ID provided, skipping IGDB requests")
+            self.client_id = None
         self.client_secret = client_secret
-        self.log = logging.getLogger(__name__)
+        if client_secret is None or client_secret == "null" or client_secret == "":
+            self.log.warning("No client secret provided, skipping IGDB requests")
+            self.client_secret = None
         self.api_failures = 0
         self.last_api_call_time = time.time()
         self.platform_id = IGDB_PLATFORM_ID

@@ -29,6 +29,7 @@ import random
 import sys
 import time
 from pathlib import Path
+from pprint import pformat
 
 import click
 from flask import Flask, render_template, request
@@ -468,6 +469,34 @@ def __set_config_default(ctx, _, conf_path_str: str):
     return conf_path
 
 
+def do_dereks():
+    import sqlite3
+
+    db = Path("C:\\Users\\derek\\Documents\\Dev\\github\\derek-keeler\\gamatrix\\tmp\\GOG-snapshot\\galaxy-2.0.db")
+    if not os.path.exists(db):
+        raise FileNotFoundError(f"DB {db} doesn't exist")
+
+    db = db
+    conn = sqlite3.connect(db)
+    cursor = conn.cursor()
+
+    owned_game_database = """
+    SELECT GamePieces.releaseKey, GamePieces.gamePieceTypeId, GamePieces.value FROM ProductPurchaseDates
+    JOIN GamePieces ON ProductPurchaseDates.gameReleaseKey = GamePieces.releaseKey;
+    """
+    owned_games_cursor = cursor.execute(owned_game_database)
+    # Now we have all the release keys and game piece types for all games owned by the user
+
+
+    user_query = cursor.execute("select * from Users")
+    users_cursor = cursor.execute(user_query)
+    # Now we have all the users in the database.
+
+
+    cursor.fetchall()
+
+
+
 @click.command(context_settings={"auto_envvar_prefix": "GAMATRIX"})
 @click.option(
     "--config-file",
@@ -476,6 +505,13 @@ def __set_config_default(ctx, _, conf_path_str: str):
     type=click.Path(),
     callback=__set_config_default,
     is_eager=True,  # process this option first-ish
+)
+@click.option(
+    "--output-config-file",
+    "-O",
+    help="Optionally write the effective config, after all command switches and env vars are taken into account, to this file.",
+    type=click.Path(),
+    default="",  # don't write the config by default
 )
 @click.option("--debug", "-d", is_flag=True, help="Print out verbose debug output.")
 @click.option(
@@ -534,6 +570,7 @@ def __set_config_default(ctx, _, conf_path_str: str):
 @click.version_option(version=gamatrix_attr("version"))
 def main(
     config_file: str,
+    output_config_file: str,
     debug: bool,
     all_games: bool,
     interface: str,
@@ -550,13 +587,23 @@ def main(
     global igdb
     global cache
 
+    do_dereks()
+    exit()
+
     if debug:
         log.setLevel(logging.DEBUG)
 
-    log.debug(f"Command line arguments: {locals()}")
+    log.debug(pformat(f"Command line arguments: {locals()}", width=120))
 
     # config = build_config(config_file=config_file, users=userids)
-    log.debug(f"config = {config}")
+    log.debug(pformat(f"config = {config}", width=120))
+
+    if output_config_file:
+        log.debug(f"Writing effective config to {output_config_file}")
+        with open(output_config_file, "w") as output_stream:
+            yaml.dump(config, output_stream, sort_keys=True, width=250, allow_unicode=True)
+
+    exit()
 
     cache = Cache(config["cache"])
     # Get multiplayer info from IGDB and save it to the cache
