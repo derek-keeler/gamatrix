@@ -23,6 +23,12 @@ igdb_client_secret: abcdefghi01234jklmno56789pqrst
 # File to cache the IGDB setup from
 cache: /path/to/cache/file
 
+# Data store configuration (NEW)
+# Path to the ingested data store file (optional, defaults to db_path/gamatrix_data_store.json)
+data_store_path: /path/to/data/store/gamatrix_data_store.json
+# Maximum number of backup files to keep (optional, defaults to 3)
+max_backups: 3
+
 # The GOG user ID matching the result of 'select * from Users;' in the DB
 users:
   12345:

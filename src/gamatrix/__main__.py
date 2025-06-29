@@ -43,6 +43,8 @@ from gamatrix.helpers.gogdb_helper import gogDB, is_sqlite3
 from gamatrix.helpers.igdb_helper import IGDBHelper
 from gamatrix.helpers.misc_helper import get_slug_from_title
 from gamatrix.helpers.network_helper import check_ip_is_authorized
+from gamatrix.helpers.data_store_helper import DataStoreHelper
+from gamatrix.helpers.ingestion_helper import IngestionHelper
 
 app = Flask(__name__)
 
@@ -109,7 +111,45 @@ def upload_file():
                     config["users"][user]["db_mtime"] = time.strftime(
                         constants.TIME_FORMAT, time.localtime()
                     )
-                    message = f"Great success! File uploaded as {filename}"
+
+                    # NEW: Extract and store game data immediately
+                    try:
+                        log.info(f"Extracting game data for user {user}")
+
+                        # Initialize data store helper
+                        data_store_path = config.get(
+                            "data_store_path",
+                            os.path.join(config["db_path"], "gamatrix_data_store.json"),
+                        )
+                        data_store_helper = DataStoreHelper(
+                            data_store_path, config.get("max_backups", 3)
+                        )
+
+                        # Load existing data store
+                        data_store = data_store_helper.load_data_store()
+
+                        # Extract data for the uploaded user
+                        ingestion_helper = IngestionHelper(config)
+                        user_data, user_games = ingestion_helper.extract_user_data(
+                            user, full_path
+                        )
+
+                        # Update data store with new user data
+                        data_store = data_store_helper.update_user_data(
+                            data_store, user, user_data, user_games
+                        )
+
+                        # Save updated data store
+                        if data_store_helper.save_data_store(data_store):
+                            log.info(f"Successfully updated data store for user {user}")
+                            message = f"Great success! File uploaded as {filename} and data extracted"
+                        else:
+                            log.error(f"Failed to save data store for user {user}")
+                            message = f"File uploaded as {filename} but data extraction failed"
+
+                    except Exception as e:
+                        log.error(f"Error during data extraction for user {user}: {e}")
+                        message = f"File uploaded as {filename} but data extraction failed: {e}"
 
         return render_template("upload_status.html.jinja", message=message)
     else:
@@ -151,17 +191,26 @@ def compare_libraries():
     if not opts["user_ids_to_compare"]:
         return root()
 
-    gog = gogDB(config, opts)
-
     if request.args["option"] == "grid":
-        gog.config["all_games"] = True
+        config["all_games"] = True
         template = "game_grid.html.jinja"
     elif request.args["option"] == "list":
         template = "game_list.html.jinja"
     else:
         return root()
 
-    common_games = gog.get_common_games()
+    # NEW: Try to get games from data store first
+    common_games = get_common_games_from_data_store(opts)
+
+    if common_games is None:
+        # Fallback to original method if data store is not available
+        log.info("Falling back to original DB parsing method")
+        gog = gogDB(config, opts)
+        common_games = gog.get_common_games()
+    else:
+        log.info(
+            f"Using data store for game comparison, found {len(common_games)} games"
+        )
 
     if not igdb.access_token:
         igdb.get_access_token()
@@ -239,6 +288,99 @@ def init_opts():
         "user_ids_to_compare": {},
         "exclude_platforms": [],
     }
+
+
+def get_common_games_from_data_store(opts):
+    """
+    Get common games from the data store instead of parsing raw DB files.
+
+    Args:
+        opts: Options dictionary with user_ids_to_compare and filtering options
+
+    Returns:
+        Dictionary of common games in the same format as the original get_common_games
+    """
+    log.debug("Getting common games from data store")
+
+    # Load data store
+    data_store_path = config.get(
+        "data_store_path", os.path.join(config["db_path"], "gamatrix_data_store.json")
+    )
+    data_store_helper = DataStoreHelper(data_store_path)
+    data_store = data_store_helper.load_data_store()
+
+    if data_store is None:
+        log.warning("No data store found, falling back to raw DB parsing")
+        return None
+
+    user_ids_to_compare = list(opts["user_ids_to_compare"].keys())
+    exclude_platforms = opts.get("exclude_platforms", [])
+    include_single_player = opts.get("include_single_player", False)
+    exclusive = opts.get("exclusive", False)
+    all_games = config.get("all_games", False)
+
+    log.debug(f"Comparing users: {user_ids_to_compare}")
+    log.debug(f"Exclusive mode: {exclusive}")
+    log.debug(f"Include single player: {include_single_player}")
+    log.debug(f"All games: {all_games}")
+
+    # Filter games based on criteria
+    filtered_games = {}
+
+    for release_key, game_data in data_store.games.items():
+        # Check if users own this game
+        game_owners = set(game_data.owners)
+        comparing_users = set(user_ids_to_compare)
+
+        if exclusive:
+            # Exclusive mode: only games owned by selected users and not by others
+            all_users = set(data_store.users.keys())
+            non_comparing_users = all_users - comparing_users
+            non_comparing_owners = game_owners & non_comparing_users
+
+            if non_comparing_owners:
+                # Game is owned by non-selected users, skip it
+                continue
+
+            # Must be owned by at least one selected user
+            if not (game_owners & comparing_users):
+                continue
+        else:
+            # Normal mode: games owned by all selected users
+            if not comparing_users.issubset(game_owners):
+                continue
+
+        # Filter by platform
+        if exclude_platforms:
+            game_platforms = set(game_data.platforms)
+            if game_platforms.issubset(set(exclude_platforms)):
+                # All platforms are excluded
+                continue
+
+        # Filter single player games
+        if not include_single_player and not game_data.multiplayer:
+            continue
+
+        # Convert to the expected format
+        filtered_games[release_key] = {
+            "title": game_data.title,
+            "slug": game_data.slug,
+            "platforms": game_data.platforms,
+            "owners": game_data.owners,
+            "installed": game_data.installed,
+            "igdb_key": game_data.igdb_key,
+            "multiplayer": game_data.multiplayer,
+            "max_players": game_data.max_players,
+        }
+
+        # Add optional fields if present
+        if game_data.comment:
+            filtered_games[release_key]["comment"] = game_data.comment
+        if game_data.url:
+            filtered_games[release_key]["url"] = game_data.url
+
+    log.debug(f"Found {len(filtered_games)} games matching criteria")
+    return filtered_games
 
 
 def get_db_mtime(db):
@@ -494,27 +636,53 @@ if __name__ == "__main__":
 
     log.debug(f'user_ids_to_compare = {web_opts["user_ids_to_compare"]}')
 
-    gog = gogDB(config, web_opts)
-    common_games = gog.get_common_games()
+    # NEW: Try to get games from data store first for CLI mode too
+    common_games = get_common_games_from_data_store(web_opts)
 
-    for k in list(common_games.keys()):
-        log.debug(f'{k}: using igdb_key {common_games[k]["igdb_key"]}')
-        # Get the IGDB ID by release key if possible, otherwise try by title
-        igdb.get_igdb_id(
-            common_games[k]["igdb_key"], config["update_cache"]
-        ) or igdb.get_igdb_id_by_slug(
-            common_games[k]["igdb_key"],
-            common_games[k]["slug"],
-            config["update_cache"],
-        )  # type: ignore
-        igdb.get_game_info(common_games[k]["igdb_key"], config["update_cache"])
-        igdb.get_multiplayer_info(common_games[k]["igdb_key"], config["update_cache"])
+    if common_games is None:
+        # Fallback to original method if data store is not available
+        log.info("Data store not available, using original DB parsing method")
+        gog = gogDB(config, web_opts)
+        common_games = gog.get_common_games()
 
-    cache.save()
-    set_multiplayer_status(common_games, cache.data)
-    common_games = gog.merge_duplicate_titles(common_games)
+        # Apply original processing for IGDB data
+        for k in list(common_games.keys()):
+            log.debug(f'{k}: using igdb_key {common_games[k]["igdb_key"]}')
+            # Get the IGDB ID by release key if possible, otherwise try by title
+            igdb.get_igdb_id(
+                common_games[k]["igdb_key"], config["update_cache"]
+            ) or igdb.get_igdb_id_by_slug(
+                common_games[k]["igdb_key"],
+                common_games[k]["slug"],
+                config["update_cache"],
+            )  # type: ignore
+            igdb.get_game_info(common_games[k]["igdb_key"], config["update_cache"])
+            igdb.get_multiplayer_info(
+                common_games[k]["igdb_key"], config["update_cache"]
+            )
 
-    common_games = gog.filter_games(common_games, config["all_games"])
+        cache.save()
+        set_multiplayer_status(common_games, cache.data)
+        common_games = gog.merge_duplicate_titles(common_games)
+        common_games = gog.filter_games(common_games, config["all_games"])
+    else:
+        log.info(f"Using data store for CLI mode, found {len(common_games)} games")
+        # Data store already has processed data, less processing needed
+        # But we might still want to update IGDB info if requested
+        if config.get("update_cache", False):
+            for k in list(common_games.keys()):
+                igdb.get_igdb_id(
+                    common_games[k]["igdb_key"], config["update_cache"]
+                ) or igdb.get_igdb_id_by_slug(
+                    common_games[k]["igdb_key"],
+                    common_games[k]["slug"],
+                    config["update_cache"],
+                )  # type: ignore
+                igdb.get_game_info(common_games[k]["igdb_key"], config["update_cache"])
+                igdb.get_multiplayer_info(
+                    common_games[k]["igdb_key"], config["update_cache"]
+                )
+            cache.save()
 
     for key in common_games:
         usernames_with_game_installed = [
