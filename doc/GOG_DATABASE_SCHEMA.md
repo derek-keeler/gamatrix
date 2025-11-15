@@ -98,11 +98,11 @@ Examples:
 **Usage in Gamatrix**:
 ```python
 # Extract game title for a release key
-cursor.execute(f'''
+cursor.execute('''
     SELECT value FROM GamePieces 
-    WHERE releaseKey="{release_key}" 
-    AND gamePieceTypeId={title_type_id}
-''')
+    WHERE releaseKey=? 
+    AND gamePieceTypeId=?
+''', (release_key, title_type_id))
 title_json = cursor.fetchone()[0]
 title = json.loads(title_json)["title"]
 ```
