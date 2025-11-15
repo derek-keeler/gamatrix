@@ -143,10 +143,7 @@ def get_installed_games(conn):
     """
     )
 
-    installed = []
-    for result in cursor.fetchall():
-        for release_key in result:
-            installed.append(release_key)
+    installed = [result[0] for result in cursor.fetchall()]
 
     return installed
 
