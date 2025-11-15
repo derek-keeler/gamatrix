@@ -279,7 +279,10 @@ def main():
         owned_count = cursor.fetchone()[0]
 
         print(f"\nOwned but Not Installed: {owned_count - len(installed_games)}")
-        print(f"Installation Rate: {len(installed_games)/owned_count*100:.1f}%")
+        if owned_count > 0:
+            print(f"Installation Rate: {len(installed_games)/owned_count*100:.1f}%")
+        else:
+            print("Installation Rate: N/A")
 
         conn.close()
 
