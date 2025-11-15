@@ -74,9 +74,7 @@ def get_installed_games(conn):
     installed_games = []
 
     # Each result is a tuple with one element (the release key)
-    for result in cursor.fetchall():
-        for release_key in result:
-            installed_games.append(release_key)
+    installed_games = [result[0] for result in cursor.fetchall()]
 
     return installed_games
 
