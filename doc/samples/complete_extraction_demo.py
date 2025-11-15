@@ -238,7 +238,7 @@ def build_game_list(conn, user_info):
             title = "Unknown Title"
 
         # Skip games with no title
-        if title is None:
+        if title == "Unknown Title":
             continue
 
         # Process each release key
