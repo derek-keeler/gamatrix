@@ -87,6 +87,11 @@ def get_owned_games(conn):
     title_id = get_gamepiecetype_id(conn, "title")
     all_releases_id = get_gamepiecetype_id(conn, "allGameReleases")
 
+    # Debug output
+    print(
+        f"[DEBUG] Type IDs - originalTitle: {original_title_id}, title: {title_id}, allGameReleases: {all_releases_id}"
+    )
+
     # Step 1: Create MasterList view
     # This joins purchased games with their metadata
     master_list_query = """
@@ -97,23 +102,28 @@ def get_owned_games(conn):
         FROM ProductPurchaseDates
         JOIN GamePieces ON ProductPurchaseDates.gameReleaseKey = GamePieces.releaseKey
     """
+    print("[DEBUG] Creating MasterList view...")
     cursor.execute(master_list_query)
 
     # Step 2: Create MasterDB view
     # This filters to just titles and platform information
-    master_db_query = """
+    # Note: SQLite does not support parameterized queries in CREATE VIEW statements,
+    # so we use f-string interpolation. The type IDs are integers from the database
+    # and are safe to interpolate.
+    master_db_query = f"""
         CREATE TEMP VIEW MasterDB AS 
         SELECT DISTINCT(MasterList.releaseKey) AS releaseKey, 
                MasterList.value AS title, 
                PLATFORMS.value AS platformList
         FROM MasterList, MasterList AS PLATFORMS
-        WHERE ((MasterList.gamePieceTypeId=?) OR 
-               (MasterList.gamePieceTypeId=?)) 
+        WHERE ((MasterList.gamePieceTypeId={original_title_id}) OR 
+               (MasterList.gamePieceTypeId={title_id})) 
           AND ((PLATFORMS.releaseKey=MasterList.releaseKey) AND 
-               (PLATFORMS.gamePieceTypeId=?))
+               (PLATFORMS.gamePieceTypeId={all_releases_id}))
         ORDER BY title
     """
-    cursor.execute(master_db_query, (original_title_id, title_id, all_releases_id))
+    print("[DEBUG] Creating MasterDB view...")
+    cursor.execute(master_db_query)
 
     # Step 3: Query unique games grouped by platform list
     final_query = """
@@ -123,9 +133,12 @@ def get_owned_games(conn):
         GROUP BY MasterDB.platformList 
         ORDER BY MasterDB.title
     """
+    print("[DEBUG] Executing final query to get owned games...")
     cursor.execute(final_query)
 
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    print(f"[DEBUG] Found {len(results)} game entries")
+    return results
 
 
 def parse_game_data(owned_games):
