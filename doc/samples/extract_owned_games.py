@@ -101,19 +101,19 @@ def get_owned_games(conn):
 
     # Step 2: Create MasterDB view
     # This filters to just titles and platform information
-    master_db_query = f"""
+    master_db_query = """
         CREATE TEMP VIEW MasterDB AS 
         SELECT DISTINCT(MasterList.releaseKey) AS releaseKey, 
                MasterList.value AS title, 
                PLATFORMS.value AS platformList
         FROM MasterList, MasterList AS PLATFORMS
-        WHERE ((MasterList.gamePieceTypeId={original_title_id}) OR 
-               (MasterList.gamePieceTypeId={title_id})) 
+        WHERE ((MasterList.gamePieceTypeId=?) OR 
+               (MasterList.gamePieceTypeId=?)) 
           AND ((PLATFORMS.releaseKey=MasterList.releaseKey) AND 
-               (PLATFORMS.gamePieceTypeId={all_releases_id}))
+               (PLATFORMS.gamePieceTypeId=?))
         ORDER BY title
     """
-    cursor.execute(master_db_query)
+    cursor.execute(master_db_query, (original_title_id, title_id, all_releases_id))
 
     # Step 3: Query unique games grouped by platform list
     final_query = """
