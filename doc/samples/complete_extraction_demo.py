@@ -230,12 +230,13 @@ def build_game_list(conn, user_info):
         # Parse title
         try:
             title_data = json.loads(title_json)
-            title = title_data.get("title", "Unknown Title")
-        except (json.JSONDecodeError, TypeError):
-            title = "Unknown Title"
-
-        # Skip games with no title
-        if title == "Unknown Title":
+            title = title_data.get("title") if title_data else None
+            # Handle None or empty titles
+            if not title:
+                print(f"  Debug: Skipping game with missing title. Release keys: {release_keys_str}, Title JSON: {title_json}")
+                continue
+        except (json.JSONDecodeError, TypeError) as e:
+            print(f"  Debug: Failed to parse title JSON. Release keys: {release_keys_str}, Error: {e}")
             continue
 
         # Process each release key
