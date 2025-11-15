@@ -77,7 +77,7 @@ def get_table_schema(conn, table_name):
         table_name: Name of the table
 
     Returns:
-        List of tuples (column_name, type, notnull, default_value, pk)
+        List of tuples (cid, column_name, type, notnull, default_value, pk)
     """
     cursor = conn.cursor()
     cursor.execute(f"PRAGMA table_info({table_name})")
@@ -140,7 +140,7 @@ def display_table_info(conn, table_name, show_samples=True):
     print(f"  {'Column':<30} {'Type':<15} {'NotNull':<8} {'PK':<4}")
     print(f"  {'-'*30} {'-'*15} {'-'*8} {'-'*4}")
     for col in schema:
-        col_name, col_type, not_null, default_val, is_pk = col
+        cid, col_name, col_type, not_null, default_val, is_pk = col
         print(
             f"  {col_name:<30} {col_type:<15} {bool(not_null)!s:<8} {bool(is_pk)!s:<4}"
         )
@@ -152,7 +152,7 @@ def display_table_info(conn, table_name, show_samples=True):
         for i, row in enumerate(samples, 1):
             print(f"\n  Row {i}:")
             for col_idx, (col_info, value) in enumerate(zip(schema, row)):
-                col_name = col_info[0]
+                col_name = col_info[1]  # Column name is at index 1 (after cid)
                 # Truncate long values
                 str_value = str(value)
                 if len(str_value) > 60:
