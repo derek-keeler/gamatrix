@@ -10,7 +10,10 @@ Jump to [command-line mode](#command-line-mode) or [building with Docker](#runni
 
 Gamatrix is a tool to compare the games owned by several users, and list all the games they have in common. It requires all users to use [GOG Galaxy](https://www.gog.com/galaxy); since GOG Galaxy supports almost all major digital distribution platforms through integrations, it's a great service for aggregating your games in one place. Gamatrix uses the SQLite database that GOG Galaxy stores locally to pull its data from; users can upload their DBs via the main page or with a provided script.
 
-**📚 Documentation**: For detailed information about how Gamatrix extracts data from the GOG Galaxy database, see the [GOG Database Schema Documentation](doc/GOG_DATABASE_SCHEMA.md) and [sample extraction scripts](doc/samples/README.md).
+**📚 Documentation**: For detailed information about how Gamatrix works:
+* [GOG Database Schema Documentation](doc/GOG_DATABASE_SCHEMA.md) - Database structure and extraction queries
+* [Compare Libraries Data Documentation](doc/COMPARE_LIBRARIES_DATA.md) - Data structures and flow for the comparison function
+* [Sample extraction scripts](doc/samples/README.md) - Example code for working with GOG databases
 
 ### Features
 
