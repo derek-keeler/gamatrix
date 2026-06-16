@@ -14,6 +14,12 @@ The app runs as a FastAPI service on AWS Lambda, backed by DynamoDB. IGDB enrich
 - User accounts with email/password login and password reset via email
 - GOG Galaxy DB upload from the browser or a scheduled script
 
+**📚 Documentation**: For detailed information about how Gamatrix works:
+- [GOG Database Schema Documentation](doc/GOG_DATABASE_SCHEMA.md) - Database structure and extraction queries
+- [Compare Libraries Data Documentation](doc/COMPARE_LIBRARIES_DATA.md) - Data structures and flow for the comparison function
+- [Sample extraction scripts](doc/samples/README.md) - Example code for working with GOG databases
+- [Overall architecture Documentation](doc/ARCHITECTURE.md) - Overview of the Gamatrix application, where things are.
+
 ## Screenshots
 
 ### Game list
