@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
 from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse
 
 from gamatrix.auth.dependencies import (
     current_user,
@@ -24,7 +24,7 @@ from gamatrix.games.web import WebCompareOptions
 from gamatrix.jobs import create_enrichment_job, is_job_stale
 from gamatrix.storage.dynamo import Repository
 from gamatrix.storage.queue import get_queue
-from gamatrix.templating import templates
+from gamatrix.templating import authenticated_template
 
 router = APIRouter(tags=["games"])
 
@@ -60,7 +60,7 @@ def games_page(
     users = {str(u["user_id"]): u for u in repo.scan_users() if u.get("user_id")}
     result = service.compare(repo, opts.to_query())
     caption = web.build_caption(users, opts, result)
-    return templates.TemplateResponse(
+    return authenticated_template(
         request,
         "games.html.jinja",
         {
@@ -87,10 +87,11 @@ def games_table(
     opts = _parse_options(request, user, repo)
     result = service.compare(repo, opts.to_query())
     caption = web.build_caption(users, opts, result)
-    return templates.TemplateResponse(
+    return authenticated_template(
         request,
         "games_table.html.jinja",
         {
+            "user": user,
             "users": users,
             "games": web.present_games(result, opts),
             "caption": caption,
@@ -126,10 +127,10 @@ def job_status(
         or job.get("status") in (JOB_COMPLETED, JOB_FAILED)
         or is_job_stale(job)
     )
-    return templates.TemplateResponse(
+    return authenticated_template(
         request,
         "job_status.html.jinja",
-        {"job": job, "job_id": job_id, "done": done},
+        {"user": user, "job": job, "job_id": job_id, "done": done},
     )
 
 
@@ -151,10 +152,11 @@ def refresh_missing(
         repo.put_game({**game, "enrichment_status": ENRICHMENT_PENDING})
     release_keys = [g["release_key"] for g in missing]
     job_id = create_enrichment_job(repo, get_queue(), release_keys)
-    return templates.TemplateResponse(
+    return authenticated_template(
         request,
         "job_status.html.jinja",
         {
+            "user": admin,
             "job": repo.get_job(job_id) if job_id else None,
             "job_id": job_id,
             "done": job_id is None,
@@ -176,10 +178,11 @@ def refresh_all(
         if game:
             repo.put_game({**game, "enrichment_status": ENRICHMENT_PENDING})
     job_id = create_enrichment_job(repo, get_queue(), release_keys)
-    return templates.TemplateResponse(
+    return authenticated_template(
         request,
         "job_status.html.jinja",
         {
+            "user": admin,
             "job": repo.get_job(job_id) if job_id else None,
             "job_id": job_id,
             "done": job_id is None,
